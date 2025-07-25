@@ -23,24 +23,14 @@ body {
   display: block;
 }
 
-#app-title {
-  position: sticky;
-  top: 0px;
-  background: #e0e0e0;
-  z-index: 500;
-  margin: 0;
-  padding: 2px 2px;
-  text-align: center;
-}
-
-/* 버튼 바 고정 (제목 아래에 바로 붙으려면 top을 제목 높이만큼 설정) */
-.controls {
-  position: sticky;
-  top: 70px;    /* 제목 높이에 맞춰 조정 */
-  background: #fff;
-  z-index: 500;
-  padding-bottom: 8px;
-  text-align: center;
+#top-bar {
+  position: fixed;
+  top: 0; left: 10px; right: 0;
+  background: #fff;      /* 뒤에 내용 가리지 않게 배경색 지정 */
+  z-index: 1000;         /* 키보드보다 위에 뜨도록 */
+  padding: 8px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  align-items: center;
 }
 
 /* 레이어 스위처 버튼 기본 스타일 */
@@ -63,6 +53,7 @@ body {
 
 /* 부모 컨테이너 */
 #main-container {
+  margin-top: calc( /* header 높이 */  48px + /* 버튼 영역 */ 40px );
   display: flex;
   flex-direction: column;
   height: 10vh;    /* 또는 원하는 전체 높이 */
