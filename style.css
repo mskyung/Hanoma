@@ -24,9 +24,23 @@ body {
 }
 
 #app-title {
+  position: sticky;
+  top: 0px;
+  background: #e0e0e0;
+  z-index: 500;
+  margin: 0;
+  padding: 2px 2px;
   text-align: center;
-  margin: 2px 2px;
-  font-size: 28px;
+}
+
+/* 버튼 바 고정 (제목 아래에 바로 붙으려면 top을 제목 높이만큼 설정) */
+.controls {
+  position: sticky;
+  top: 70px;    /* 제목 높이에 맞춰 조정 */
+  background: #fff;
+  z-index: 500;
+  padding-bottom: 8px;
+  text-align: center;
 }
 
 /* 레이어 스위처 버튼 기본 스타일 */
