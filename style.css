@@ -1,6 +1,14 @@
 body {
   display: flex;
   flex-direction: column; /* 가로 → 세로 정렬 */
+  align-items: center;
+  justify-content: left;
+  gap: 10px;
+  height: 90vh;
+  margin: 0;
+  background-color: #f5f5f5;
+  font-family: sans-serif;
+  padding: 20px;
 }
 
 :root {
@@ -20,7 +28,6 @@ body {
   top: 0; left: 50px; right: 0;
   z-index: 1000;         /* 키보드보다 위에 뜨도록 */
   padding: 8px 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   align-items: center;
 }
 
@@ -47,19 +54,19 @@ body {
 #main-container {
   margin-top: calc( /* header 높이 */  48px + /* 버튼 영역 */ 40px );
   display: flex;
-  flex-direction: column;
   height: 10vh;    /* 또는 원하는 전체 높이 */
 }
 
 #keyboard-wrapper {
-
 	margin-top: 55px;
-	
     border: 1px solid #aaa;
     padding: 5px;
-    
-	position: auto;
-}
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+    background: #f8f8f8;
+    border-radius: 5px;
+ }
 
 #keyboard-header {
   display: flex;
@@ -178,11 +185,10 @@ button {
   font-size: 1rem;
 }
 
-
-.corner1 {fill: #d4f5d6; stroke: #144455; stroke-width: 0.5;}
-.corner2 {fill: #d4f5d6; stroke: #144455; stroke-width: 0.5;}
-.corner3 {fill: #d4f5d6; stroke: #144455; stroke-width: 0.5;}
-.corner4 {fill: #d4f5d6; stroke: #144455; stroke-width: 0.5;}
+.corner1 {fill: #080808; stroke: #144455; stroke-width: 0.5;}
+.corner2 {fill: #080808; stroke: #144455; stroke-width: 0.5;}
+.corner3 {fill: #080808; stroke: #144455; stroke-width: 0.5;}
+.corner4 {fill: #080808; stroke: #144455; stroke-width: 0.5;}
 
 .octagon-big1 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
 .octagon-big2 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
