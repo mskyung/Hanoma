@@ -109,10 +109,10 @@ button {
   font-size: 1rem;
 }
 
-.corner1 {fill: #d4f5d6; stroke: #144455; stroke-width: 0.5;}
-.corner2 {fill: #d4f5d6; stroke: #144455; stroke-width: 0.5;}
-.corner3 {fill: #d4f5d6; stroke: #144455; stroke-width: 0.5;}
-.corner4 {fill: #d4f5d6; stroke: #144455; stroke-width: 0.5;}
+.corner1 {fill: #0a0a0a; stroke: #144455; stroke-width: 0.5;}
+.corner2 {fill: #0a0a0a; stroke: #144455; stroke-width: 0.5;}
+.corner3 {fill: #0a0a0a; stroke: #144455; stroke-width: 0.5;}
+.corner4 {fill: #0a0a0a; stroke: #144455; stroke-width: 0.5;}
 
 .octagon-big1 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
 .octagon-big2 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
