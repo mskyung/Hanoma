@@ -1,41 +1,52 @@
 (function() {
-  const display = document.getElementById('display');
-  let last = null; // 최근 조합 상태 기억용
-  let capMode = false; // Cap 버튼
-  let capsLock = false; // CapsLock 상태
+	const display = document.getElementById('display');
+	let last = null; // 최근 조합 상태 기억용
+	let capMode = false; // Cap 버튼
+	let capsLock = false; // CapsLock 상태
+	let lastClickTime = 0;
+	let clickSuppressed = false;
 
-  const CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-  const JUNGSUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
-  const JONGSUNG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+	const CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+	const JUNGSUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+	const JONGSUNG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
 
-  function isChosung(ch) { return CHOSUNG.includes(ch); }
-  function isJungsung(ch) { return JUNGSUNG.includes(ch); }
+	function isChosung(ch) { return CHOSUNG.includes(ch); }
+	function isJungsung(ch) { return JUNGSUNG.includes(ch); }
 
-  function combineHangul(cho, jung, jong = '') {
-    const ci = CHOSUNG.indexOf(cho);
-    const ji = JUNGSUNG.indexOf(jung);
-    const joi = JONGSUNG.indexOf(jong);
-    if (ci < 0 || ji < 0) return null;
-    return String.fromCharCode(0xAC00 + (ci * 21 + ji) * 28 + joi);
-  }
+	function combineHangul(cho, jung, jong = '') {
+		const ci = CHOSUNG.indexOf(cho);
+		const ji = JUNGSUNG.indexOf(jung);
+		const joi = JONGSUNG.indexOf(jong);
+		if (ci < 0 || ji < 0) return null;
+		return String.fromCharCode(0xAC00 + (ci * 21 + ji) * 28 + joi);
+	}
 
-  function removeLastChar() {
-    display.value = display.value.slice(0, -1);
-  }
+	function removeLastChar() {
+		display.value = display.value.slice(0, -1);
+	}
   
-  function insertChar(char) {
-    if (typeof char !== 'string') return;
-    if (/^[a-zA-Z]$/.test(char)) {
-      if (capsLock || capMode) {
-        char = char.toUpperCase();
-        if (capMode) { 
-			capMode = false;
-			document.getElementById('cap-btn').classList.remove('active');
+	function insertChar(char) {
+		if (typeof char !== 'string' || !char.trim()) return;
+		//if (typeof char !== 'string' || char.length === 0) return;
+		const isAlpha = /^[a-zA-Z]$/.test(char);
+		const isKR = isChosung(char) || isJungsung(char);
+		
+		if (isAlpha && (capsLock || capMode)) {
+			char = char.toUpperCase();
 		}
-      } else {
-        char = char.toLowerCase();
-      }
-    }
+				
+		// 영어는 그대로 출력
+		if (!isKR) {
+			display.value += char;
+			last = null;
+			
+			// ✅ 이 위치에서만 Cap 해제!
+			if (capMode && isAlpha) {
+				capMode = false;
+				document.getElementById('cap-btn')?.classList.remove('active');
+			}
+			return;
+		}
 
 	const DOUBLE_FINAL = {'ㄱㅅ':'ㄳ','ㄴㅈ':'ㄵ','ㄴㅎ':'ㄶ','ㄹㄱ':'ㄺ','ㄹㅁ':'ㄻ','ㄹㅂ':'ㄼ',
 		'ㄹㅅ':'ㄽ','ㄹㅌ':'ㄾ','ㄹㅍ':'ㄿ', 'ㄹㅎ':'ㅀ','ㅂㅅ':'ㅄ'
@@ -103,146 +114,181 @@
 			last = null;
 		}
 	}
-  }  
+	}  
 
-  // 한글 조합 버튼 이벤트
-  document.querySelectorAll('[data-click]').forEach(el => {
-    let clickTimeout, moved = false, startX = 0, startY = 0;
-    el.addEventListener('pointerdown', e => {
-      moved = false;
-      startX = e.clientX;
-      startY = e.clientY;
-    });
-    el.addEventListener('pointermove', e => {
-      if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) moved = true;
-    });
-    el.addEventListener('pointerup', e => {
-      if (moved) insertChar(el.dataset.drag);
-      else {
-        clearTimeout(clickTimeout);
-        clickTimeout = setTimeout(() => insertChar(el.dataset.click), 250);
-      }
-    });
-    el.addEventListener('dblclick', e => {
-      clearTimeout(clickTimeout);
-      insertChar(el.dataset.dblclick);
-    });
-  });
-  
-  // 백스페이스 버튼 기능
-  document.getElementById('backspace').addEventListener('click', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    removeLastChar();
-    last = null;
-    display.focus();
-  });
-
-  // 스페이스 버튼 기능
-  document.getElementById('space').addEventListener('click', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    display.value += ' ';
-    last = null;
-    display.focus();
-  });
-
-  // 크기 조절 및 레이어 전환 등 나머지 설정
-  let scale = 1.0;
-  const savedScale = localStorage.getItem('keyboardScale');
-  if (savedScale) scale = parseFloat(savedScale);
-  applyScale();
-
-  document.getElementById('scale-up').addEventListener('click', () => {
-    scale = Math.min(scale + 0.01, 2);
-    applyScale();
-  });
-  document.getElementById('scale-down').addEventListener('click', () => {
-    scale = Math.max(0.5, scale - 0.01);
-    applyScale();
-  });
-
-  function applyScale() {
-    localStorage.setItem('keyboardScale', scale);
-    const container = document.getElementById('keyboard-container');
-    container.style.transform = `scale(${scale})`;
-  }
-
-  document.getElementById('hand-right').addEventListener('click', () => {
-    const containerEl = document.getElementById('keyboard-container');
-    containerEl.classList.remove('left-handed');
-    containerEl.classList.add('right-handed');
-  });
-  document.getElementById('hand-left').addEventListener('click', () => {
-    const containerEl = document.getElementById('keyboard-container');
-    containerEl.classList.remove('right-handed');
-    containerEl.classList.add('left-handed');
-  });
-
-  function switchLayer(target) {
-    document.querySelectorAll('#layer-switcher button[data-layer]').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.layer === target);
-    });
-    document.querySelectorAll('.layer').forEach(div => {
-      div.classList.toggle('active', div.dataset.layer === target);
-    });
-  }
-
-  document.querySelectorAll('#layer-switcher button[data-layer]').forEach(btn => {
-    btn.addEventListener('click', () => switchLayer(btn.dataset.layer));
-  });
-
-  // 초기 레이어를 KR로 설정
-  switchLayer('KR');
-  
-  // ——— Refresh 버튼 기능 ———
-  const refreshBtn = document.getElementById('refresh-btn');
-  refreshBtn.addEventListener('click', () => {
-	display.value = '';   // 화면 클리어
-	last = null;          // 상태 초기화
-  });
-  
-  // ——— Copy 버튼 기능 ———
-  const copyBtn = document.getElementById('copy-btn');
-  copyBtn.addEventListener('click', () => {
-	// 빈 값일 땐 복사하지 않게
-	if (!display.value) return;
-  
-	navigator.clipboard.writeText(display.value)
-		.then(() => {
-			// 복사 완료 피드백 (원하면 alert 대신 토스트 UI로 바꿔도 좋아요)
-			alert('텍스트가 클립보드에 복사되었어! ✨');
-		})
-		.catch(err => {
-			console.error('복사 실패:', err);
+	// 한글 조합 버튼 이벤트
+	document.querySelectorAll('[data-click]').forEach(el => {
+		let clickTimeout, moved = false, startX = 0, startY = 0;
+		el.addEventListener('pointerdown', e => {
+			moved = false;
+			startX = e.clientX;
+			startY = e.clientY;
 		});
-  });
+		
+		el.addEventListener('pointermove', e => {
+			if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) moved = true;
+		});
+		
+		el.addEventListener('pointerup', e => {
+			const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
+				if (moved) {
+					const dragKey = el.dataset.drag;
+					if (activeLayer === 'KR') insertChar(dragKey);
+					else handleKeyInput(dragKey);
+				} else {
+					clearTimeout(clickTimeout);
+					const clickKey = el.dataset.click;
+					clickTimeout = setTimeout(() => {
+						if (!clickKey || clickKey.trim() === '') return;
+						if (activeLayer === 'KR') {
+							insertChar(clickKey);
+						} else {
+							handleKeyInput(clickKey);
+						}
+					}, 250);
+				}      
+		});
+    el.addEventListener('dblclick', e => {
+		clearTimeout(clickTimeout);
+		const dblKey = el.dataset.dblclick;
+		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
+		if (activeLayer === 'KR') insertChar(dblKey);
+		else handleKeyInput(dblKey);      
+    });
+	});
   
-  document.getElementById('cap-btn').addEventListener('click', () => {
-    capMode = true;
-	document.getElementById('cap-btn').classList.add('active');
-  });
+	// 백스페이스 버튼 기능
+	document.getElementById('backspace').addEventListener('click', e => {
+		e.preventDefault();
+		e.stopPropagation();
+		removeLastChar();
+		last = null;
+		display.focus();
+	});
 
-  document.getElementById('caps-btn').addEventListener('click', () => {
-    capsLock = !capsLock;
-    document.getElementById('caps-btn').classList.toggle('active', capsLock);
-  });  
+	// 스페이스 버튼 기능
+	document.getElementById('space').addEventListener('click', e => {
+		e.preventDefault();
+		e.stopPropagation();
+		display.value += ' ';
+		last = null;
+		display.focus();
+	});
+
+	// 크기 조절 및 레이어 전환 등 나머지 설정
+	let scale = 1.0;
+	const savedScale = localStorage.getItem('keyboardScale');
+	if (savedScale) scale = parseFloat(savedScale);
+	applyScale();
+
+	document.getElementById('scale-up').addEventListener('click', () => {
+		scale = Math.min(scale + 0.01, 2);
+		applyScale();
+	});
+	document.getElementById('scale-down').addEventListener('click', () => {
+		scale = Math.max(0.5, scale - 0.01);
+		applyScale();
+	});
+
+	function applyScale() {
+		localStorage.setItem('keyboardScale', scale);
+		const container = document.getElementById('keyboard-container');
+		container.style.transform = `scale(${scale})`;
+	}
+
+	document.getElementById('hand-right').addEventListener('click', () => {
+		const containerEl = document.getElementById('keyboard-container');
+		containerEl.classList.remove('left-handed');
+		containerEl.classList.add('right-handed');
+	});
+	document.getElementById('hand-left').addEventListener('click', () => {
+		const containerEl = document.getElementById('keyboard-container');
+		containerEl.classList.remove('right-handed');
+		containerEl.classList.add('left-handed');
+	});
+
+	function switchLayer(target) {
+		document.querySelectorAll('#layer-switcher button[data-layer]').forEach(btn => {
+			btn.classList.toggle('active', btn.dataset.layer === target);
+		});
+		document.querySelectorAll('.layer').forEach(div => {
+			div.classList.toggle('active', div.dataset.layer === target);
+		});
+	}
+
+	document.querySelectorAll('#layer-switcher button[data-layer]').forEach(btn => {
+		btn.addEventListener('click', () => switchLayer(btn.dataset.layer));
+	});
+
+	// 초기 레이어를 KR로 설정
+	switchLayer('KR');
   
-  document.getElementById("display").addEventListener("focus", e => e.target.blur());
- 
-  // 키보드 클릭 이벤트 (optional)
-  const containerEl = document.getElementById('keyboard-container');
-  containerEl.addEventListener('click', e => {
-    const key = e.target.dataset.key;
-    if (!key) return;
-    const activeLayer = document.querySelector('#layer-switcher button.active').dataset.layer;
-    insertChar(key); 
-	//switch (activeLayer) {
-    //  case 'KR': insertChar(key); break;
-    //  case 'EN': display.value += key; break;
-    //  case 'SYM': display.value += key; break;
-    //  case 'NUM': display.value += key; break;
-    //}
-  });
- 
+	// ——— Refresh 버튼 기능 ———
+	const refreshBtn = document.getElementById('refresh-btn');
+	refreshBtn.addEventListener('click', () => {
+		display.value = '';   // 화면 클리어
+		last = null;          // 상태 초기화
+	});
+  
+	// ——— Copy 버튼 기능 ———
+	const copyBtn = document.getElementById('copy-btn');
+	copyBtn.addEventListener('click', () => {
+		// 빈 값일 땐 복사하지 않게
+		if (!display.value) return;
+  
+		navigator.clipboard.writeText(display.value)
+			.then(() => {
+				// 복사 완료 피드백 (원하면 alert 대신 토스트 UI로 바꿔도 좋아요)
+				alert('텍스트가 클립보드에 복사되었어! ✨');
+			})
+			.catch(err => {
+				console.error('복사 실패:', err);
+			});
+	});
+  
+	document.getElementById('cap-btn').addEventListener('click', () => {
+		capMode = true;
+		document.getElementById('cap-btn').classList.add('active');
+	});
+
+	document.getElementById('caps-btn').addEventListener('click', () => {
+		capsLock = !capsLock;
+		document.getElementById('caps-btn').classList.toggle('active', capsLock);
+	});  
+  
+	document.getElementById("display").addEventListener("focus", e => e.target.blur());
+  
+	const containerEl = document.getElementById('keyboard-container');
+	containerEl.addEventListener('mouseup', e => {
+		if (!dragTarget) return;
+		const target = e.target.closest('[data-drag]');
+		if (target && target === dragTarget) {
+			const key = target.dataset.drag;
+			const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
+    
+			if (activeLayer !== 'KR') {
+				handleKeyInput(key);
+			}
+		}
+		dragTarget = null;
+	});
+  
+	function handleKeyInput(key) {
+		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
+		if (typeof key !== 'string' || !key.trim()) return;
+		
+		const isAlpha = /^[a-zA-Z]$/.test(key);
+		if (['EN', 'SYM', 'NUM'].includes(activeLayer)) {
+			if (capsLock || capMode) {
+				key = key.toUpperCase();
+			}	
+			display.value += key;
+			last = null;
+			
+			if (capMode && isAlpha) {
+				capMode = false;
+				document.getElementById('cap-btn')?.classList.remove('active');
+			} 
+		}
+	} 
 })();
