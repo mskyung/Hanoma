@@ -227,6 +227,8 @@
     capsLock = !capsLock;
     document.getElementById('caps-btn').classList.toggle('active', capsLock);
   });  
+  
+  document.getElementById("display").addEventListener("focus", e => e.target.blur());
  
   // 키보드 클릭 이벤트 (optional)
   const containerEl = document.getElementById('keyboard-container');
