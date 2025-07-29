@@ -27,27 +27,103 @@
   
 	function insertChar(char) {
 		if (typeof char !== 'string' || !char.trim()) return;
-		//if (typeof char !== 'string' || char.length === 0) return;
+
+		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
 		const isAlpha = /^[a-zA-Z]$/.test(char);
 		const isKR = isChosung(char) || isJungsung(char);
 		
-		if (isAlpha && (capsLock || capMode)) {
-			char = char.toUpperCase();
-		}
-				
-		// 영어는 그대로 출력
-		if (!isKR) {
+		if (activeLayer === 'EN') {
+			if (isAlpha && (capsLock || capMode)) {
+				char = char.toUpperCase();
+			}
 			display.value += char;
 			last = null;
-			
-			// ✅ 이 위치에서만 Cap 해제!
-			if (capMode && isAlpha) {
+
+			if (capMode && /^[a-z]$/.test(char)) {
 				capMode = false;
 				document.getElementById('cap-btn')?.classList.remove('active');
 			}
 			return;
 		}
+		
+		if (activeLayer === 'KR' && isKR) {
+			if (isChosung(char)) {
+				// 2) CVJ 상태에서 이중 종성 처리 시도
+				if (last && last.type === 'CVJ') {
+					const pair = last.jong + char;
+					if (pair in DOUBLE_FINAL) {
+						removeLastChar();  // 이전 글자(예: '갑') 지우고
+						const newJong = DOUBLE_FINAL[pair];
+						const syll = combineHangul(last.cho, last.jung, newJong);
+						display.value += syll || (last.cho + last.jung + newJong);
+						last = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: newJong };
+						return; 
+					} 			
+				}
+				// 3) 단일 종성(CV → CVJ)
+				if (last && last.type === 'CV') {
+					removeLastChar();
+					const syll = combineHangul(last.cho, last.jung, char);
+					display.value += syll || (last.cho + last.jung + char);
+					last = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: char };
+				} else {
+					// 그 외는 새로운 초성으로
+					display.value += char;
+					last = { type: 'C', cho: char };
+				}
+				return;
+			}	
+			
+			if (isJungsung(char)) {
+				if (last?.type === 'CVJ') {
+					const double = REVERSE_DOUBLE_FINAL[last.jong];
+					if (double && CHOSUNG.includes(double[1])) {
+						removeLastChar(); 
+						const prevSyll = combineHangul(last.cho, last.jung, double[0]);
+						const nextSyll = combineHangul(double[1], char);
+						display.value += prevSyll + nextSyll;
+						last = { type: 'CV', cho: double[1], jung: char };
+						return;
+					} else if (CHOSUNG.includes(last.jong)) {
+						removeLastChar();
+						const prevSyll = combineHangul(last.cho, last.jung);
+						const nextSyll = combineHangul(last.jong, char);
+						display.value += prevSyll + nextSyll;
+						last = { type: 'CV', cho: last.jong, jung: char };
+						return;
+					}
+				} else if (last?.type === 'C') {
+					// 초성 + 중성 → CV 구성
+					removeLastChar();
+					const syll = combineHangul(last.cho, char);
+					display.value += syll || (last.cho + char);
+					last = { type: 'CV', cho: last.cho, jung: char };
+				} else if (last?.type === 'CVJ') {
+					display.value += char;
+					last = { type: 'V', char };
+				} else {
+					// 기타 문자
+					display.value += char;
+					last = null;
+				}
+				return;
+			}
 
+			// SYM, NUM: 그냥 문자 추가
+			if (activeLayer === 'SYM' || activeLayer === 'NUM') {
+				display.value += char;
+				last = null;
+				return;
+			}
+		}
+		// 핵심 추가 부분: KR이더라도 자모가 아니면 그냥 입력
+		if ((activeLayer === 'KR' && !isKR) || activeLayer === 'NUM' || activeLayer === 'SYM') {
+			display.value += char;
+			last = null;
+			return;
+		}
+	}
+	
 	const DOUBLE_FINAL = {'ㄱㅅ':'ㄳ','ㄴㅈ':'ㄵ','ㄴㅎ':'ㄶ','ㄹㄱ':'ㄺ','ㄹㅁ':'ㄻ','ㄹㅂ':'ㄼ',
 		'ㄹㅅ':'ㄽ','ㄹㅌ':'ㄾ','ㄹㅍ':'ㄿ', 'ㄹㅎ':'ㅀ','ㅂㅅ':'ㅄ'
 	};
@@ -55,66 +131,6 @@
 	const REVERSE_DOUBLE_FINAL = {'ㄳ': ['ㄱ','ㅅ'], 'ㄵ': ['ㄴ','ㅈ'], 'ㄶ': ['ㄴ','ㅎ'], 'ㄺ': ['ㄹ','ㄱ'], 'ㄻ': ['ㄹ','ㅁ'], 
 		'ㄼ': ['ㄹ','ㅂ'], 'ㄽ': ['ㄹ','ㅅ'], 'ㄾ': ['ㄹ','ㅌ'], 'ㄿ': ['ㄹ','ㅍ'],	'ㅀ': ['ㄹ','ㅎ'], 'ㅄ': ['ㅂ','ㅅ']
 	};
-
-	if (isChosung(char)) {
-		// 2) CVJ 상태에서 이중 종성 처리 시도
-		if (last && last.type === 'CVJ') {
-			const pair = last.jong + char;
-			if (pair in DOUBLE_FINAL) {
-				removeLastChar();  // 이전 글자(예: '갑') 지우고
-				const newJong = DOUBLE_FINAL[pair];
-				const syll = combineHangul(last.cho, last.jung, newJong);
-				display.value += syll || (last.cho + last.jung + newJong);
-				last = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: newJong };
-				return; 
-			} 			
-		}
-		// 3) 단일 종성(CV → CVJ)
-		if (last && last.type === 'CV') {
-			removeLastChar();
-			const syll = combineHangul(last.cho, last.jung, char);
-			display.value += syll || (last.cho + last.jung + char);
-			last = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: char };
-		} else {
-			// 그 외는 새로운 초성으로
-			display.value += char;
-			last = { type: 'C', cho: char };
-		}
-
-	} else if (isJungsung(char)) {
-		if (last?.type === 'CVJ') {
-			const double = REVERSE_DOUBLE_FINAL[last.jong];
-			if (double && CHOSUNG.includes(double[1])) {
-				removeLastChar(); 
-				const prevSyll = combineHangul(last.cho, last.jung, double[0]);
-				const nextSyll = combineHangul(double[1], char);
-				display.value += prevSyll + nextSyll;
-				last = { type: 'CV', cho: double[1], jung: char };
-				return;
-			} else if (CHOSUNG.includes(last.jong)) {
-				removeLastChar();
-				const prevSyll = combineHangul(last.cho, last.jung);
-				const nextSyll = combineHangul(last.jong, char);
-				display.value += prevSyll + nextSyll;
-				last = { type: 'CV', cho: last.jong, jung: char };
-				return;
-			}
-		} else if (last?.type === 'C') {
-			// 초성 + 중성 → CV 구성
-			removeLastChar();
-			const syll = combineHangul(last.cho, char);
-			display.value += syll || (last.cho + char);
-			last = { type: 'CV', cho: last.cho, jung: char };
-		} else if (last?.type === 'CVJ') {
-			display.value += char;
-			last = { type: 'V', char };
-		} else {
-			// 기타 문자
-			display.value += char;
-			last = null;
-		}
-	}
-	}  
 
 	// 한글 조합 버튼 이벤트
 	document.querySelectorAll('[data-click]').forEach(el => {
@@ -148,13 +164,13 @@
 					}, 250);
 				}      
 		});
-    el.addEventListener('dblclick', e => {
-		clearTimeout(clickTimeout);
-		const dblKey = el.dataset.dblclick;
-		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
-		if (activeLayer === 'KR') insertChar(dblKey);
-		else handleKeyInput(dblKey);      
-    });
+		el.addEventListener('dblclick', e => {
+			clearTimeout(clickTimeout);
+			const dblKey = el.dataset.dblclick;
+			const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
+			if (activeLayer === 'KR') insertChar(dblKey);
+			else handleKeyInput(dblKey);      
+		});
 	});
   
 	// 백스페이스 버튼 기능
@@ -214,9 +230,18 @@
 		document.querySelectorAll('.layer').forEach(div => {
 			div.classList.toggle('active', div.dataset.layer === target);
 		});
+
+		// Cap, Caps는 EN에서만 유효 → 레이어 바뀌면 강제 초기화
+		if (target !== 'EN') {
+			capMode = false;
+			capsLock = false;
+			document.getElementById('cap-btn')?.classList.remove('active');
+			document.getElementById('caps-btn')?.classList.remove('active');
+		}
 	}
 
-	document.querySelectorAll('#layer-switcher button[data-layer]').forEach(btn => {
+	//document.querySelectorAll('#layer-switcher button[data-layer]').forEach(btn => {
+	document.querySelectorAll('button[data-layer]').forEach(btn => {
 		btn.addEventListener('click', () => switchLayer(btn.dataset.layer));
 	});
 
@@ -228,6 +253,11 @@
 	refreshBtn.addEventListener('click', () => {
 		display.value = '';   // 화면 클리어
 		last = null;          // 상태 초기화
+		switchLayer('KR');
+		capMode = false;
+		capsLock = false;
+		document.getElementById('cap-btn').classList.remove('active');
+		document.getElementById('caps-btn').classList.remove('active');
 	});
   
 	// ——— Copy 버튼 기능 ———
@@ -247,13 +277,32 @@
 	});
   
 	document.getElementById('cap-btn').addEventListener('click', () => {
-		capMode = true;
-		document.getElementById('cap-btn').classList.add('active');
+		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
+		if (activeLayer !== 'EN') return;
+
+		capMode = !capMode;
+		console.log('🔁 Cap Toggled:', capMode);
+
+		document.getElementById('cap-btn').classList.toggle('active', capMode);
+
+		if (capMode) {
+			capsLock = false;
+			document.getElementById('caps-btn').classList.remove('active');
+		}
 	});
 
 	document.getElementById('caps-btn').addEventListener('click', () => {
+		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
+		if (activeLayer !== 'EN') return;
+
 		capsLock = !capsLock;
+
+		// ✅ Caps 상태 반영
 		document.getElementById('caps-btn').classList.toggle('active', capsLock);
+
+		// ✅ Cap은 무조건 해제
+		capMode = false;
+		document.getElementById('cap-btn').classList.remove('active');
 	});  
   
 	document.getElementById("display").addEventListener("focus", e => e.target.blur());
@@ -276,19 +325,19 @@
 	function handleKeyInput(key) {
 		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
 		if (typeof key !== 'string' || !key.trim()) return;
-		
-		const isAlpha = /^[a-zA-Z]$/.test(key);
-		if (['EN', 'SYM', 'NUM'].includes(activeLayer)) {
-			if (capsLock || capMode) {
-				key = key.toUpperCase();
-			}	
-			display.value += key;
-			last = null;
-			
+
+		const isAlpha = /^[a-z]$/.test(key);
+
+		if (activeLayer === 'EN') {
 			if (capMode && isAlpha) {
+				key = key.toUpperCase();
 				capMode = false;
 				document.getElementById('cap-btn')?.classList.remove('active');
-			} 
+			} else if (capsLock && isAlpha) {
+				key = key.toUpperCase();
+			}
 		}
+		display.value += key;
+		last = null;
 	} 
 })();

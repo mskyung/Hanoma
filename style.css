@@ -25,6 +25,7 @@ body {
   text-align: center;
   margin-bottom: 0px;
 }
+
 #layer-switcher button {
   background: #e0e0e0;
   border: 1px solid #aaa;
@@ -32,6 +33,7 @@ body {
   margin: 1px;
   cursor: pointer;
 }
+
 #layer-switcher button.active {
   background-color: var(--key-center-color);
   border-color: var(--key-center-color);
