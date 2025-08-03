@@ -43,7 +43,7 @@ body {
 }
 
 #display {         /* 글자 표시창 */
-  width: 100%;
+  width: 95%;
   height: 100%;
   font-size: 18px;
   background-color: #f0f0f0;
