@@ -3,11 +3,8 @@ body {
   flex-direction: column; /* 가로 → 세로 정렬 */
   align-items: center;
   justify-content: left;
-  gap: 5px;
-  margin: 5px;
   background-color: #f5f5f5;
   font-family: sans-serif;
-  padding: 5px;
 }
 
 :root {
@@ -40,18 +37,14 @@ body {
   color: #fff;
 }
 
-#control-panel {
-	display: flex;
-	flex-flow: row nowrap;
-	flex-direction: row;	
-	align-items: left;           /* 가로 - 왼쪽으로 */
-    justify-content: flex-start; /* 세로 - 상단으로 */
-	gap: 2px; 
-	margin-bottom: 2px;
+#display-container {     
+  width: 450px;
+  height: 150px;
 }
 
 #display {         /* 글자 표시창 */
-  height: 150px;
+  width: 100%;
+  height: 100%;
   font-size: 18px;
   background-color: #f0f0f0;
   border-radius: 5px;
@@ -91,18 +84,6 @@ svg#keyboard {
     border-radius: 2px;
 }
 
-polygon.key-button {
-    fill: #e0e0e0;
-    stroke: #000000;
-    stroke-width: 1;
-    cursor: pointer;
-}
-
-/* 활성화 된 버튼 */
-polygon.key-button:hover {
-    fill: #d0f0ff;
-}
-
 /* 숫자,기호,영어,한글... 좌,우,Clear 버튼 */
 button {
   width: 45px;
@@ -110,11 +91,6 @@ button {
   cursor: pointer;
   font-size: 1rem;
 }
-
-.corner1 {fill: #0a0a0a; stroke: #144455; stroke-width: 0.5;}
-.corner2 {fill: #0a0a0a; stroke: #144455; stroke-width: 0.5;}
-.corner3 {fill: #0a0a0a; stroke: #144455; stroke-width: 0.5;}
-.corner4 {fill: #0a0a0a; stroke: #144455; stroke-width: 0.5;}
 
 .octagon-big1 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
 .octagon-big2 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
