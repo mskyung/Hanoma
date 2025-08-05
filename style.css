@@ -18,21 +18,32 @@ body {
   display: block;
 }
 
-#layer-switcher {     /* 레이어 스위치 버튼 기본 스타일 */
-  text-align: center;
-  margin-bottom: 0px;
+#layer-switcher {
+  width: 320px; /* 전체 컨테이너 너비 지정 */
+  display: flex;
+  flex-direction: column; /* 자식 요소(줄)들을 세로로 정렬 */
+  align-items: center; /* 가운데 정렬 */
+  gap: 5px; /* 줄 사이의 간격 */
+  margin-bottom: 5px;
+}
+
+.button-row {
+  width: 100%; /* 부모 요소의 전체 너비를 차지 */
+  display: flex;
+  justify-content: space-between; /* 버튼들을 좌우로 균등하게 배분 */
 }
 
 #layer-switcher button {
   background: #e0e0e0;
   border: 1px solid #aaa;
   padding: 1px 1px;
-  margin: 1px;
+  /* margin 값은 균등 배분을 위해 제거하거나 0으로 설정 */
+  margin: 2px; 
   cursor: pointer;
 }
 
 #layer-switcher button.active {
-  background-color: var(--key-center-color);
+  background-color: var(--key-center-color);   /* 녹색 (#77aa77) */
   border-color: var(--key-center-color);
   color: #fff;
 }
@@ -62,14 +73,12 @@ body {
 #keyboard-container.right-handed {
   margin-left: auto;
   margin-right: 0px;
-  margin-bottom: 20px;
   transform-origin: bottom right;
 }
 
 #keyboard-container.left-handed {
   margin-right: auto;
   margin-left: 0px;
-  margin-bottom: 20px;
 }
 
 svg {
@@ -92,24 +101,22 @@ button {
   font-size: 1rem;
 }
 
-.octagon-big1 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
-.octagon-big2 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
-.octagon-big3 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
-.octagon-big4 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
-.octagon-big5 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
-.octagon-big6 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
-.octagon-big7 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
-.octagon-big8 {fill: #a3dfaa;  stroke: #144455;  stroke-width: 0.5;}
+.octagon-center {
+	fill: #6cbf72; 
+	stroke: #144455; 
+	stroke-width: 0.5;
+}
 
-.octagon-small1 {fill: #84cc86; stroke: #144455; stroke-width: 0.5;}
-.octagon-small2 {fill: #84cc86; stroke: #144455; stroke-width: 0.5;}
-.octagon-small3 {fill: #84cc86; stroke: #144455; stroke-width: 0.5;}
-.octagon-small4 {fill: #84cc86; stroke: #144455; stroke-width: 0.5;}
-.octagon-small5 {fill: #84cc86; stroke: #144455; stroke-width: 0.5;}
-.octagon-small6 {fill: #84cc86; stroke: #144455; stroke-width: 0.5;}
-.octagon-small7 {fill: #84cc86; stroke: #144455; stroke-width: 0.5;}
-.octagon-small8 {fill: #84cc86; stroke: #144455; stroke-width: 0.5;}
+.octagon-small1, .octagon-small2, .octagon-small3, .octagon-small4, 
+.octagon-small5, .octagon-small6, .octagon-small7, .octagon-small8 {
+  fill: #84cc86; 
+  stroke: #144455; 
+  stroke-width: 0.5;
+}
 
-.octagon-center {fill: #6cbf72; stroke: #144455; stroke-width: 0.5;}
-
-
+.octagon-big1, .octagon-big2, .octagon-big3, .octagon-big4, 
+.octagon-big5, .octagon-big6, .octagon-big7, .octagon-big8 {
+  fill: #a3dfaa;  
+  stroke: #144455;  
+  stroke-width: 0.5;
+}

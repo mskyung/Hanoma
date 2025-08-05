@@ -1,302 +1,252 @@
-(function() {
-	const display = document.getElementById('display');
-	let last = null; 
-	let capsLock = false; 
+class HanomaKeyboard {
+    constructor(options) {
+        // 주요 DOM 요소
+        this.display = document.getElementById(options.displayId);
+        this.keyboardContainer = document.getElementById(options.keyboardContainerId);
+        this.layerButtons = document.querySelectorAll(options.layerButtonSelector);
+        
+        // 한글 조합 상수
+        this.CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+        this.JUNGSUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+        this.JONGSUNG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+        this.DOUBLE_FINAL = {'ㄱㅅ':'ㄳ','ㄴㅈ':'ㄵ','ㄴㅎ':'ㄶ','ㄹㄱ':'ㄺ','ㄹㅁ':'ㄻ','ㄹㅂ':'ㄼ', 'ㄹㅅ':'ㄽ','ㄹㅌ':'ㄾ','ㄹㅍ':'ㄿ', 'ㄹㅎ':'ㅀ','ㅂㅅ':'ㅄ'};
+        this.REVERSE_DOUBLE_FINAL = Object.fromEntries(Object.entries(this.DOUBLE_FINAL).map(([key, val]) => [val, key.split('')]));
 
-	const CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-	const JUNGSUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
-	const JONGSUNG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-	const DOUBLE_FINAL = {'ㄱㅅ':'ㄳ','ㄴㅈ':'ㄵ','ㄴㅎ':'ㄶ','ㄹㄱ':'ㄺ','ㄹㅁ':'ㄻ','ㄹㅂ':'ㄼ', 'ㄹㅅ':'ㄽ','ㄹㅌ':'ㄾ','ㄹㅍ':'ㄿ', 'ㄹㅎ':'ㅀ','ㅂㅅ':'ㅄ'};
-	const REVERSE_DOUBLE_FINAL = {'ㄳ': ['ㄱ','ㅅ'], 'ㄵ': ['ㄴ','ㅈ'], 'ㄶ': ['ㄴ','ㅎ'], 'ㄺ': ['ㄹ','ㄱ'], 'ㄻ': ['ㄹ','ㅁ'], 'ㄼ': ['ㄹ','ㅂ'], 'ㄽ': ['ㄹ','ㅅ'], 'ㄾ': ['ㄹ','ㅌ'], 'ㄿ': ['ㄹ','ㅍ'],	'ㅀ': ['ㄹ','ㅎ'], 'ㅄ': ['ㅂ','ㅅ']};
+        // 키보드 상태
+        this.state = {
+            lastCharInfo: null,
+            capsLock: false,
+            scale: 1.0,
+            activeLayer: 'KR',
+            isPointerDown: false,
+            pointerMoved: false,
+            clickTimeout: null // 더블클릭 판별을 위한 타이머
+        };
+        
+        this.init();
+    }
 
-	function isChosung(ch) { return CHOSUNG.includes(ch); }
-	function isJungsung(ch) { return JUNGSUNG.includes(ch); }
-	function removeLastChar() { display.value = display.value.slice(0, -1);	}
+    init() {
+        this.loadSettings();
+        this.attachEventListeners();
+        this.switchLayer('KR'); // 초기 레이어 설정
+    }
 
-	function combineHangul(cho, jung, jong = '') {
-		const ci = CHOSUNG.indexOf(cho);
-		const ji = JUNGSUNG.indexOf(jung);
-		const joi = JONGSUNG.indexOf(jong);
-		if (ci < 0 || ji < 0) return null;
-		return String.fromCharCode(0xAC00 + (ci * 21 + ji) * 28 + joi);
-	}
-	
-	function insertChar(char) {
-		if (typeof char !== 'string' || !char.trim()) return;
-
-		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
-		const isAlpha = /^[a-zA-Z]$/.test(char);
-		const isKR = isChosung(char) || isJungsung(char);
-		
-		if (activeLayer === 'EN') {
-			if (isAlpha && (capsLock || capMode)) {
-				char = char.toUpperCase();
-			}
-			display.value += char;
-			last = null;
-
-			if (capMode && /^[a-z]$/.test(char)) {
-				capMode = false;
-				//document.getElementById('cap-btn')?.classList.remove('active');
-			}
-			return;
-		}
-		
-		if (activeLayer === 'KR' && isKR) {
-			if (isChosung(char)) {
-				if (last && last.type === 'CVJ') {
-					const pair = last.jong + char;
-					if (pair in DOUBLE_FINAL) {
-						removeLastChar(); 
-						const newJong = DOUBLE_FINAL[pair];
-						const syll = combineHangul(last.cho, last.jung, newJong);
-						display.value += syll || (last.cho + last.jung + newJong);
-						last = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: newJong };
-						return; 
-					} 			
-				}
-				if (last && last.type === 'CV') {
-					removeLastChar();
-					const syll = combineHangul(last.cho, last.jung, char);
-					display.value += syll || (last.cho + last.jung + char);
-					last = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: char };
-				} else {
-					display.value += char;
-					last = { type: 'C', cho: char };
-				}
-				return;
-			}	
-			
-			if (isJungsung(char)) {
-				if (last?.type === 'CVJ') {
-					const double = REVERSE_DOUBLE_FINAL[last.jong];
-					if (double && CHOSUNG.includes(double[1])) {
-						removeLastChar(); 
-						const prevSyll = combineHangul(last.cho, last.jung, double[0]);
-						const nextSyll = combineHangul(double[1], char);
-						display.value += prevSyll + nextSyll;
-						last = { type: 'CV', cho: double[1], jung: char };
-						return;
-					} else if (CHOSUNG.includes(last.jong)) {
-						removeLastChar();
-						const prevSyll = combineHangul(last.cho, last.jung);
-						const nextSyll = combineHangul(last.jong, char);
-						display.value += prevSyll + nextSyll;
-						last = { type: 'CV', cho: last.jong, jung: char };
-						return;
-					}
-				} else if (last?.type === 'C') {
-					removeLastChar();
-					const syll = combineHangul(last.cho, char);
-					display.value += syll || (last.cho + char);
-					last = { type: 'CV', cho: last.cho, jung: char };
-				} else if (last?.type === 'CVJ') {
-					display.value += char;
-					last = { type: 'V', char };
-				} else {
-					display.value += char;
-					last = null;
-				}
-				return;
-			}
-
-			if (activeLayer === 'SYM' || activeLayer === 'NUM') {
-				display.value += char;
-				last = null;
-				return;
-			}
-		}
-		if ((activeLayer === 'KR' && !isKR) || activeLayer === 'NUM' || activeLayer === 'SYM') {
-			display.value += char;
-			last = null;
-			return;
-		}
-	}
-
-	// 한글 조합 버튼 이벤트
-	document.querySelectorAll('[data-click]').forEach(el => {
-		let clickTimeout, moved = false, startX = 0, startY = 0;
-		el.addEventListener('pointerdown', e => {
-			moved = false;
-			startX = e.clientX;
-			startY = e.clientY;
-		});
-		
-		el.addEventListener('pointermove', e => {
-			if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) moved = true;
-		});
-		
-		el.addEventListener('pointerup', e => {
-			const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
-				if (moved) {
-					const dragKey = el.dataset.drag;
-					if (activeLayer === 'KR') insertChar(dragKey);
-					else handleKeyInput(dragKey);
-				} else {
-					clearTimeout(clickTimeout);
-					const clickKey = el.dataset.click;
-					clickTimeout = setTimeout(() => {
-						if (!clickKey || clickKey.trim() === '') return;
-						if (activeLayer === 'KR') {
-							insertChar(clickKey);
-						} else {
-							handleKeyInput(clickKey);
-						}
-					}, 250);
-				}      
-		});
-		el.addEventListener('dblclick', e => {
-			clearTimeout(clickTimeout);
-			const dblKey = el.dataset.dblclick;
-			const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
-			if (activeLayer === 'KR') insertChar(dblKey);
-			else handleKeyInput(dblKey);      
-		});
-	});
-  
-	// 백스페이스 버튼 기능
-	document.getElementById('backspace').addEventListener('click', e => {
-		e.preventDefault();
-		e.stopPropagation();
-		removeLastChar();
-		last = null;
-		display.focus();
-	});
-
-	// 스페이스 버튼 기능
-	document.getElementById('space').addEventListener('click', e => {
-		e.preventDefault();
-		e.stopPropagation();
-		display.value += ' ';
-		last = null;
-		display.focus();
-	});
-
-	// 크기 조절 및 레이어 전환 등 나머지 설정
-	let scale = 1.0;
-	const savedScale = localStorage.getItem('keyboardScale');
-	if (savedScale) scale = parseFloat(savedScale);
-	applyScale();
-	
-	// 입력창 크기 설정
-	function applyScale() {
-		localStorage.setItem('keyboardScale', scale);
-		const container = document.getElementById('keyboard-container');
-		container.style.transform = `scale(${scale})`;
-	}
-	
-	// 입력창 크기 확대
-	document.getElementById('scale-up').addEventListener('click', () => {
-		scale = Math.min(scale + 0.01, 2);
-		applyScale();
-	});
-	
-	// 입력창 크기 축소
-	document.getElementById('scale-down').addEventListener('click', () => {
-		scale = Math.max(0.5, scale - 0.01);
-		applyScale();
-	});
-	
-	// 오른손잡이
-	document.getElementById('hand-right').addEventListener('click', () => {
-		const containerEl = document.getElementById('keyboard-container');
-		containerEl.classList.remove('left-handed');
-		containerEl.classList.add('right-handed');
-	});
-	
-	// 왼손잡이
-	document.getElementById('hand-left').addEventListener('click', () => {
-		const containerEl = document.getElementById('keyboard-container');
-		containerEl.classList.remove('right-handed');
-		containerEl.classList.add('left-handed');
-	});
-	
-	// Caps 버튼은 EN 모드에서만 작동
-	function switchLayer(target) {
-		document.querySelectorAll('#layer-switcher button[data-layer]').forEach(btn => {
-			btn.classList.toggle('active', btn.dataset.layer === target);
-		});
-		document.querySelectorAll('.layer').forEach(div => {
-			div.classList.toggle('active', div.dataset.layer === target);
-		});
-
-		// Caps는 EN에서만 유효 → 레이어 바뀌면 강제 초기화
-		if (target !== 'EN') {
-			capMode = false;
-			capsLock = false;
-			document.getElementById('caps-btn')?.classList.remove('active');
-		}
-	}
-	
-	document.querySelectorAll('button[data-layer]').forEach(btn => {
-		btn.addEventListener('click', () => switchLayer(btn.dataset.layer));
-	});
-
-	// 초기 레이어를 KR로 설정
-	switchLayer('KR');
-	
-	// Refresh 버튼
-	document.getElementById('refresh-btn').addEventListener('click', () => { 
-		window.location.reload();
-	});
-	
-	// Copy 버튼
-	const copyBtn = document.getElementById('copy-btn');
-	copyBtn.addEventListener('click', () => {
-		if (!display.value) return;
-  
-		navigator.clipboard.writeText(display.value)
-			.then(() => {
-				alert('클립보드에 복사됨');
-			})
-			.catch(err => {
-				console.error('복사 실패:', err);
-			});
-	});
-	
-	// Caps 버튼
-	document.getElementById('caps-btn').addEventListener('click', () => {
-		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
-		if (activeLayer !== 'EN') return;
-
-		capsLock = !capsLock;
-		document.getElementById('caps-btn').classList.toggle('active', capsLock);
-		capMode = false;
-	});  
-  
-	//document.getElementById("display").addEventListener("focus", e => e.target.blur());
-  
-	const containerEl = document.getElementById('keyboard-container');
-	containerEl.addEventListener('mouseup', e => {
-		if (!dragTarget) return;
-		const target = e.target.closest('[data-drag]');
-		if (target && target === dragTarget) {
-			const key = target.dataset.drag;
-			const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
+    loadSettings() {
+        // 저장된 스케일 값 불러오기
+        const savedScale = localStorage.getItem('keyboardScale');
+        if (savedScale) {
+            this.state.scale = parseFloat(savedScale);
+            this.applyScale();
+        }
+    }
     
-			if (activeLayer !== 'KR') {
-				handleKeyInput(key);
-			}
-		}
-		dragTarget = null;
-	});
-  
-	function handleKeyInput(key) {
-		const activeLayer = document.querySelector('#layer-switcher button.active')?.dataset.layer;
-		if (typeof key !== 'string' || !key.trim()) return;
+    // 모든 이벤트 리스너 등록
+    attachEventListeners() {
+        // 키 입력 이벤트 (클릭, 더블클릭, 드래그)
+        document.querySelectorAll('[data-click]').forEach(el => {
+            let startX = 0, startY = 0;
 
-		const isAlpha = /^[a-z]$/.test(key);
+            el.addEventListener('pointerdown', e => {
+                this.state.isPointerDown = true;
+                this.state.pointerMoved = false;
+                startX = e.clientX;
+                startY = e.clientY;
+            });
 
-		if (activeLayer === 'EN') {
-			if (capMode && isAlpha) {
-				key = key.toUpperCase();
-				capMode = false;
-				//document.getElementById('caps-btn')?.classList.remove('active');
-			} else if (capsLock && isAlpha) {
-				key = key.toUpperCase();
-			}
-		}
-		display.value += key;
-		last = null;
-	} 
-})();
+            el.addEventListener('pointermove', e => {
+                if (this.state.isPointerDown && (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10)) {
+                    this.state.pointerMoved = true;
+                }
+            });
+
+            el.addEventListener('pointerup', e => {
+                if (this.state.pointerMoved) {
+                    // [수정] data-drag 값이 없으면 data-click 값을 사용
+                    this.handleInput(el.dataset.drag || el.dataset.click);
+                }
+                this.state.isPointerDown = false;
+            });
+            
+            el.addEventListener('click', e => {
+                e.preventDefault();
+                if (this.state.pointerMoved) {
+                    return;
+                }
+                if (!this.state.clickTimeout) {
+                    this.state.clickTimeout = setTimeout(() => {
+                        this.handleInput(el.dataset.click);
+                        this.state.clickTimeout = null;
+                    }, 250);
+                }
+            });
+
+            el.addEventListener('dblclick', e => {
+                e.preventDefault();
+                if (this.state.clickTimeout) {
+                    clearTimeout(this.state.clickTimeout);
+                    this.state.clickTimeout = null;
+                }
+                // [수정] data-dblclick 값이 없으면 data-click 값을 사용
+                this.handleInput(el.dataset.dblclick || el.dataset.click);
+            });
+        });
+
+        // 기능 버튼 이벤트
+        document.getElementById('backspace').addEventListener('click', () => this.backspace());
+        document.getElementById('space').addEventListener('click', () => this.handleInput(' '));
+        document.getElementById('refresh-btn').addEventListener('click', () => this.clear());
+        document.getElementById('copy-btn').addEventListener('click', () => this.copyToClipboard());
+        document.getElementById('caps-btn').addEventListener('click', () => this.toggleCapsLock());
+        document.getElementById('scale-up').addEventListener('click', () => this.setScale(this.state.scale + 0.01));
+        document.getElementById('scale-down').addEventListener('click', () => this.setScale(this.state.scale - 0.01));
+        document.getElementById('hand-right').addEventListener('click', () => this.setHandedness('right-handed'));
+        document.getElementById('hand-left').addEventListener('click', () => this.setHandedness('left-handed'));
+        
+        this.layerButtons.forEach(btn => {
+            btn.addEventListener('click', () => this.switchLayer(btn.dataset.layer));
+        });
+    }
+
+    // 범용 입력 처리기
+    handleInput(char) {
+        if (typeof char !== 'string' || !char.trim() && char !== ' ') return;
+        
+        const isKR = this.CHOSUNG.includes(char) || this.JUNGSUNG.includes(char);
+
+        if (this.state.activeLayer === 'KR' && isKR) {
+            this.composeHangul(char);
+        } else {
+            // 한글, 숫자, 심볼, 영어 입력
+            this.state.lastCharInfo = null; // 한글 조합 상태 초기화
+            let charToInsert = char;
+
+            if (this.state.activeLayer === 'EN' && this.state.capsLock && /^[a-z]$/.test(char)) {
+                charToInsert = char.toUpperCase();
+            }
+            this.display.value += charToInsert;
+        }
+    }
+
+    // 한글 조합
+    composeHangul(char) {
+        const last = this.state.lastCharInfo;
+        const isChosung = this.CHOSUNG.includes(char);
+        const isJungsung = this.JUNGSUNG.includes(char);
+
+        if (isChosung) {
+            if (last && last.type === 'CVJ' && this.DOUBLE_FINAL[last.jong + char]) { // 겹받침 조합
+                this.removeLastChar();
+                const newJong = this.DOUBLE_FINAL[last.jong + char];
+                this.display.value += this.combineCode(last.cho, last.jung, newJong);
+                this.state.lastCharInfo = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: newJong };
+            } else if (last && last.type === 'CV') { // 종성 추가
+                this.removeLastChar();
+                this.display.value += this.combineCode(last.cho, last.jung, char);
+                this.state.lastCharInfo = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: char };
+            } else { // 초성 입력
+                this.display.value += char;
+                this.state.lastCharInfo = { type: 'C', cho: char };
+            }
+        } else if (isJungsung) {
+            if (last?.type === 'CVJ') { // 종성 분리 후 새 글자 조합
+                const double = this.REVERSE_DOUBLE_FINAL[last.jong];
+                if (double) { // 겹받침 분리
+                    this.removeLastChar();
+                    this.display.value += this.combineCode(last.cho, last.jung, double[0]);
+                    this.display.value += this.combineCode(double[1], char);
+                    this.state.lastCharInfo = { type: 'CV', cho: double[1], jung: char };
+                } else { // 홑받침 분리
+                    this.removeLastChar();
+                    this.display.value += this.combineCode(last.cho, last.jung);
+                    this.display.value += this.combineCode(last.jong, char);
+                    this.state.lastCharInfo = { type: 'CV', cho: last.jong, jung: char };
+                }
+            } else if (last?.type === 'C') { // 중성 추가
+                this.removeLastChar();
+                this.display.value += this.combineCode(last.cho, char);
+                this.state.lastCharInfo = { type: 'CV', cho: last.cho, jung: char };
+            } else { // 모음 단독 입력
+                this.display.value += char;
+                this.state.lastCharInfo = null;
+            }
+        }
+    }
+    
+    combineCode(cho, jung, jong = '') {
+        const ci = this.CHOSUNG.indexOf(cho);
+        const ji = this.JUNGSUNG.indexOf(jung);
+        const joi = this.JONGSUNG.indexOf(jong);
+        if (ci < 0 || ji < 0) return cho + jung; // 조합 실패 시 글자 반환
+        return String.fromCharCode(0xAC00 + (ci * 21 + ji) * 28 + joi);
+    }
+    
+    // 기능 함수들
+    removeLastChar() { this.display.value = this.display.value.slice(0, -1); }
+    backspace() {
+        this.removeLastChar();
+        this.state.lastCharInfo = null; // 상태 초기화
+    }
+    clear() {
+        this.display.value = '';
+        this.state.lastCharInfo = null;
+    }
+    copyToClipboard() {
+        if (!this.display.value) return;
+        navigator.clipboard.writeText(this.display.value)
+            .then(() => alert('클립보드에 복사되었습니다.'))
+            .catch(err => console.error('복사 실패:', err));
+    }
+
+    /**
+     * @modified
+     * Caps Lock 상태를 토글합니다.
+     * 이 기능은 EN(영어) 레이어에서만 Caps Lock을 '켤' 수 있습니다.
+     * 다른 레이어로 전환하면 switchLayer 함수에 의해 자동으로 '꺼집니다'.
+     */
+    toggleCapsLock() {
+        // EN 레이어가 아니고, Caps Lock이 꺼져 있는 상태에서는 활성화(켜기) 불가
+        if (this.state.activeLayer !== 'EN' && !this.state.capsLock) {
+            return;
+        }
+        this.state.capsLock = !this.state.capsLock;
+        document.getElementById('caps-btn').classList.toggle('active', this.state.capsLock);
+    }
+
+    setScale(newScale) {
+        this.state.scale = Math.max(0.5, Math.min(newScale, 2.0));
+        localStorage.setItem('keyboardScale', this.state.scale);
+        this.applyScale();
+    }
+    applyScale() {
+        this.keyboardContainer.style.transform = `scale(${this.state.scale})`;
+    }
+    setHandedness(className) {
+        this.keyboardContainer.classList.remove('left-handed', 'right-handed');
+        this.keyboardContainer.classList.add(className);
+    }
+    switchLayer(layerName) {
+        this.state.activeLayer = layerName;
+        this.state.lastCharInfo = null; // 레이어 변경 시 조합 상태 초기화
+
+        document.querySelectorAll('.layer').forEach(div => {
+            div.classList.toggle('active', div.dataset.layer === layerName);
+        });
+        this.layerButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.layer === layerName);
+        });
+
+        if (layerName !== 'EN' && this.state.capsLock) {
+            this.toggleCapsLock(); // EN 레이어가 아니면 Caps Lock 해제
+        }
+    }
+}
+
+// 키보드 인스턴스 생성
+document.addEventListener('DOMContentLoaded', () => {
+    new HanomaKeyboard({
+        displayId: 'display',
+        keyboardContainerId: 'keyboard-container',
+        layerButtonSelector: 'button[data-layer]'
+    });
+});
