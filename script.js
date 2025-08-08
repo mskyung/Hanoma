@@ -146,7 +146,7 @@ class HanomaKeyboard {
             if (this.state.activeLayer === 'EN' && this.state.capsLock && /^[a-z]$/.test(char)) {
                 charToInsert = char.toUpperCase();
             }
-            this.display.value += charToInsert;
+            this.insertAtCursor(charToInsert);
         }
     }
 
@@ -206,9 +206,26 @@ class HanomaKeyboard {
     // 기능 함수들
     removeLastChar() { this.display.value = this.display.value.slice(0, -1); }
     backspace() {
-        this.removeLastChar();
-        this.state.lastCharInfo = null;
-    }
+		const start = this.display.selectionStart;
+		const end = this.display.selectionEnd;
+
+		if (start === 0 && end === 0) return;
+
+		if (start === end) {
+			this.display.value = this.display.value.substring(0, start - 1) + this.display.value.substring(start);
+			this.display.selectionStart = this.display.selectionEnd = start - 1;
+		} else {
+			this.display.value = this.display.value.substring(0, start) + this.display.value.substring(end);
+			this.display.selectionStart = this.display.selectionEnd = start;
+		}
+		this.state.lastCharInfo = null;
+	}
+	insertAtCursor(text) {
+		const start = this.display.selectionStart;
+		const end = this.display.selectionEnd;
+		this.display.value = this.display.value.substring(0, start) + text + this.display.value.substring(end);
+		this.display.selectionStart = this.display.selectionEnd = start + text.length;
+	}
     clear() {
         this.display.value = '';
         this.state.lastCharInfo = null;
