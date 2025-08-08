@@ -36,9 +36,8 @@ body {
 #layer-switcher button {
   background: #e0e0e0;
   border: 1px solid #aaa;
-  padding: 1px 1px;
-  /* margin 값은 균등 배분을 위해 제거하거나 0으로 설정 */
-  margin: 2px; 
+  padding: 1px 1px;  
+  /*margin: 2px;   margin 값은 균등 배분을 위해 제거하거나 0으로 설정 */
   cursor: pointer;
 }
 
@@ -66,19 +65,9 @@ body {
 #keyboard-container {
   display: block;
   margin-bottom: 20px;
-  transform-origin: bottom left;
-  transition: transform 0.1s ease-in-out;
-}
-
-#keyboard-container.right-handed {
-  margin-left: auto;
-  margin-right: 0px;
-  transform-origin: bottom right;
-}
-
-#keyboard-container.left-handed {
-  margin-right: auto;
-  margin-left: 0px;
+  transform-origin: bottom;  /* [수정] transform-origin을 'bottom'으로 변경하여 중앙에서 확대/축소되도록 함 */
+  transition: transform 0.1s ease-in-out;  
+  position: relative;  /* [추가] 위치 이동을 위해 position 속성 추가 */
 }
 
 svg {

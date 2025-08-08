@@ -20,7 +20,8 @@ class HanomaKeyboard {
             activeLayer: 'KR',
             isPointerDown: false,
             pointerMoved: false,
-            clickTimeout: null // 더블클릭 판별을 위한 타이머
+            clickTimeout: null, // 더블클릭 판별을 위한 타이머
+			horizontalOffset: 0 // [추가] 키보드 수평 위치 오프셋
         };
         
         this.init();
@@ -38,6 +39,12 @@ class HanomaKeyboard {
         if (savedScale) {
             this.state.scale = parseFloat(savedScale);
             this.applyScale();
+        }
+		// [추가] 저장된 위치 값 불러오기
+        const savedOffset = localStorage.getItem('keyboardHorizontalOffset');
+        if (savedOffset) {
+            this.state.horizontalOffset = parseInt(savedOffset, 10);
+            this.applyPosition();
         }
     }
     
@@ -100,9 +107,9 @@ class HanomaKeyboard {
         document.getElementById('caps-btn').addEventListener('click', () => this.toggleCapsLock());
         document.getElementById('scale-up').addEventListener('click', () => this.setScale(this.state.scale + 0.01));
         document.getElementById('scale-down').addEventListener('click', () => this.setScale(this.state.scale - 0.01));
-        document.getElementById('hand-right').addEventListener('click', () => this.setHandedness('right-handed'));
-        document.getElementById('hand-left').addEventListener('click', () => this.setHandedness('left-handed'));
-        
+        document.getElementById('hand-left').addEventListener('click', () => this.moveKeyboard(-1));
+        document.getElementById('hand-right').addEventListener('click', () => this.moveKeyboard(1));
+
         this.layerButtons.forEach(btn => {
             btn.addEventListener('click', () => this.switchLayer(btn.dataset.layer));
         });
@@ -198,12 +205,9 @@ class HanomaKeyboard {
             .catch(err => console.error('복사 실패:', err));
     }
 
-    /**
-     * @modified
-     * Caps Lock 상태를 토글합니다.
-     * 이 기능은 EN(영어) 레이어에서만 Caps Lock을 '켤' 수 있습니다.
-     * 다른 레이어로 전환하면 switchLayer 함수에 의해 자동으로 '꺼집니다'.
-     */
+    // @modified  Caps Lock 상태를 토글함.
+    // EN(영어) 레이어에서만 Caps Lock을 '켤' 수 있음.
+    // 다른 레이어로 전환하면 switchLayer 함수에 의해 자동으로 '꺼집니다'.
     toggleCapsLock() {
         // EN 레이어가 아니고, Caps Lock이 꺼져 있는 상태에서는 활성화(켜기) 불가
         if (this.state.activeLayer !== 'EN' && !this.state.capsLock) {
@@ -221,9 +225,16 @@ class HanomaKeyboard {
     applyScale() {
         this.keyboardContainer.style.transform = `scale(${this.state.scale})`;
     }
-    setHandedness(className) {
-        this.keyboardContainer.classList.remove('left-handed', 'right-handed');
-        this.keyboardContainer.classList.add(className);
+	// 키보드 위치를 적용하는 함수
+    applyPosition() {
+        this.keyboardContainer.style.left = `${this.state.horizontalOffset}px`;
+    }
+	// 키보드를 수평으로 1px씩 이동시키는 함수
+    // @param {number} direction - 이동 방향. -1은 왼쪽, 1은 오른쪽.
+    moveKeyboard(direction) {
+        this.state.horizontalOffset += direction;
+		this.applyPosition(); // 화면에 위치 적용		
+        localStorage.setItem('keyboardHorizontalOffset', this.state.horizontalOffset); // [추가] 변경된 위치 값 저장
     }
     switchLayer(layerName) {
         this.state.activeLayer = layerName;
