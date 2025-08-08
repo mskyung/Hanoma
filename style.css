@@ -21,17 +21,17 @@ body {
 
 #layer-switcher {
   position: fixed;   /* layer-switcher를 화면 하단에 고정 */
-  bottom: 10px; /* 화면 하단에서의 여백 */
+  bottom: 2px; /* 화면 하단에서의 여백 */
   left: 50%;
   transform: translateX(-50%); /* 수평 중앙 정렬 */
   width: 320px;     /* 전체 컨테이너 너비 지정 */
   display: flex;
   flex-direction: column; /* 자식 요소(줄)들을 세로로 정렬 */
   align-items: center;   /* 가운데 정렬 */
-  gap: 5px;             /* 줄 사이의 간격 */
-  padding: 10px;  
+  gap: 2px;             /* 줄 사이의 간격 */
+  padding: 2px;  
   background-color: #f5f5f5; /* 배경색 추가 */
-  border-radius: 8px; /* 모서리를 둥글게 */
+  border-radius: 5px; /* 모서리를 둥글게 */
   box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* 그림자 효과 */
 }
 
@@ -81,7 +81,7 @@ body {
   display: block;
   bottom: 115px; /* 기능 버튼 높이(85px) + 기능 버튼 하단 여백(10px) + 추가 여백(20px) = 115px */
   left: 50%;
-  margin-bottom: 20px;
+  margin-bottom: 2px;
   transform-origin: bottom;   /* transform-origin을 'bottom'으로 변경하여 중앙에서 확대/축소되도록 함 */
   transition: transform 0.1s ease-in-out;  
   position: relative;      /* 위치 이동을 위해 position 속성 추가 */
