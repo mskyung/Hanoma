@@ -4,7 +4,8 @@ body {
   align-items: center;
   justify-content: left;
   background-color: #f5f5f5;
-  font-family: sans-serif;
+  font-family: sans-serif;  
+  padding-bottom: 100px;  /* 컨트롤 버튼이 다른 콘텐츠를 가리지 않도록 body에 하단 여백 추가 */
 }
 
 :root {
@@ -19,32 +20,46 @@ body {
 }
 
 #layer-switcher {
-  width: 320px; /* 전체 컨테이너 너비 지정 */
+  position: fixed;   /* layer-switcher를 화면 하단에 고정 */
+  bottom: 10px; /* 화면 하단에서의 여백 */
+  left: 50%;
+  transform: translateX(-50%); /* 수평 중앙 정렬 */
+  width: 320px;     /* 전체 컨테이너 너비 지정 */
   display: flex;
   flex-direction: column; /* 자식 요소(줄)들을 세로로 정렬 */
-  align-items: center; /* 가운데 정렬 */
-  gap: 5px; /* 줄 사이의 간격 */
-  margin-bottom: 5px;
+  align-items: center;   /* 가운데 정렬 */
+  gap: 5px;             /* 줄 사이의 간격 */
+  padding: 10px;  
+  background-color: #f5f5f5; /* 배경색 추가 */
+  border-radius: 8px; /* 모서리를 둥글게 */
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* 그림자 효과 */
 }
 
 .button-row {
-  width: 100%; /* 부모 요소의 전체 너비를 차지 */
+  width: 100%;  /* 부모 요소의 전체 너비를 차지 */
   display: flex;
-  justify-content: space-between; /* 버튼들을 좌우로 균등하게 배분 */
+  justify-content: space-around; /* space-between; 버튼들을 좌우로 균등하게 배분 */
 }
 
 #layer-switcher button {
   background: #e0e0e0;
   border: 1px solid #aaa;
   padding: 1px 1px;  
-  /*margin: 2px;   margin 값은 균등 배분을 위해 제거하거나 0으로 설정 */
+  flex-grow: 1;     /* 버튼들이 가로 공간을 채우도록 함 */
+  margin: 0px 2px;  /* margin: 0px;  균등 배분을 위해 제거하거나 0으로 설정 */
   cursor: pointer;
 }
 
 #layer-switcher button.active {
-  background-color: var(--key-center-color);   /* 녹색 (#77aa77) */
+  background-color: var(--key-center-color);  /* 녹색 (#77aa77) */
   border-color: var(--key-center-color);
   color: #fff;
+}
+
+#layer-switcher button.caps-on {   /* EN 버튼이 Caps Lock 상태일 때 적용될 스타일 */
+  background-color: #4a90e2;      /* 파란색으로 변경 */
+  border-color: #4a90e2;
+  color: white;
 }
 
 #display-container {     
@@ -52,7 +67,7 @@ body {
   height: 150px;
 }
 
-#display {         /* 글자 표시창 */
+#display {      /* 글자 표시창 */
   width: 95%;
   height: 100%;
   font-size: 18px;
@@ -64,10 +79,12 @@ body {
 
 #keyboard-container {
   display: block;
+  bottom: 115px; /* 기능 버튼 높이(85px) + 기능 버튼 하단 여백(10px) + 추가 여백(20px) = 115px */
+  left: 50%;
   margin-bottom: 20px;
-  transform-origin: bottom;  /* [수정] transform-origin을 'bottom'으로 변경하여 중앙에서 확대/축소되도록 함 */
+  transform-origin: bottom;   /* transform-origin을 'bottom'으로 변경하여 중앙에서 확대/축소되도록 함 */
   transition: transform 0.1s ease-in-out;  
-  position: relative;  /* [추가] 위치 이동을 위해 position 속성 추가 */
+  position: relative;      /* 위치 이동을 위해 position 속성 추가 */
 }
 
 svg {
@@ -75,15 +92,13 @@ svg {
   height: 100%;
 }
 
-/* 입력용 키보드 */
-svg#keyboard {
+svg#keyboard {    /* 입력용 키보드 */
     width: 300px;
     height: 300px;
     border-radius: 2px;
 }
 
-/* 숫자,기호,영어,한글... 좌,우,Clear 버튼 */
-button {
+button {     /* 숫자,기호,영어,한글... 좌,우,Clear 버튼 */
   width: 50px;
   height: 30px;
   cursor: pointer;
@@ -91,9 +106,9 @@ button {
 }
 
 .octagon-center {
-	fill: #6cbf72; 
-	stroke: #144455; 
-	stroke-width: 0.5;
+  fill: #6cbf72; 
+  stroke: #144455; 
+  stroke-width: 0.5;
 }
 
 .octagon-small1, .octagon-small2, .octagon-small3, .octagon-small4, 
@@ -108,4 +123,60 @@ button {
   fill: #a3dfaa;  
   stroke: #144455;  
   stroke-width: 0.5;
+}
+
+/* Settings Modal Styles */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; 
+  z-index: 1000; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 300px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+.close-button {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.settings-controls .control-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.settings-controls label {
+    flex-basis: 30%;
+    text-align: left;
+}
+
+.settings-controls button {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
 }

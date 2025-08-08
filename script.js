@@ -2,8 +2,10 @@ class HanomaKeyboard {
     constructor(options) {
         // 주요 DOM 요소
         this.display = document.getElementById(options.displayId);
+        this.displayContainer = document.getElementById(options.displayContainerId);
         this.keyboardContainer = document.getElementById(options.keyboardContainerId);
         this.layerButtons = document.querySelectorAll(options.layerButtonSelector);
+		this.settingsModal = document.getElementById(options.settingsModalId);
         
         // 한글 조합 상수
         this.CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
@@ -20,8 +22,9 @@ class HanomaKeyboard {
             activeLayer: 'KR',
             isPointerDown: false,
             pointerMoved: false,
-            clickTimeout: null, // 더블클릭 판별을 위한 타이머
-			horizontalOffset: 0 // [추가] 키보드 수평 위치 오프셋
+            clickTimeout: null,
+			horizontalOffset: 0,
+			verticalOffset: 0
         };
         
         this.init();
@@ -30,27 +33,29 @@ class HanomaKeyboard {
     init() {
         this.loadSettings();
         this.attachEventListeners();
-        this.switchLayer('KR'); // 초기 레이어 설정
+        this.switchLayer('KR');
     }
 
     loadSettings() {
-        // 저장된 스케일 값 불러오기
         const savedScale = localStorage.getItem('keyboardScale');
         if (savedScale) {
             this.state.scale = parseFloat(savedScale);
-            this.applyScale();
         }
-		// [추가] 저장된 위치 값 불러오기
-        const savedOffset = localStorage.getItem('keyboardHorizontalOffset');
-        if (savedOffset) {
-            this.state.horizontalOffset = parseInt(savedOffset, 10);
-            this.applyPosition();
+		const savedHorizontalOffset = localStorage.getItem('keyboardHorizontalOffset');
+        if (savedHorizontalOffset) {
+            this.state.horizontalOffset = parseInt(savedHorizontalOffset, 10);
+            this.applyHorizontalPosition();
         }
+        const savedVerticalOffset = localStorage.getItem('keyboardVerticalOffset');
+        if (savedVerticalOffset) {
+            this.state.verticalOffset = parseInt(savedVerticalOffset, 10);
+        }
+        
+        this.applyKeyboardTransform();
     }
     
     // 모든 이벤트 리스너 등록
     attachEventListeners() {
-        // 키 입력 이벤트 (클릭, 더블클릭, 드래그)
         document.querySelectorAll('[data-click]').forEach(el => {
             let startX = 0, startY = 0;
 
@@ -69,7 +74,6 @@ class HanomaKeyboard {
 
             el.addEventListener('pointerup', e => {
                 if (this.state.pointerMoved) {
-                    // [수정] data-drag 값이 없으면 data-click 값을 사용
                     this.handleInput(el.dataset.drag || el.dataset.click);
                 }
                 this.state.isPointerDown = false;
@@ -94,7 +98,6 @@ class HanomaKeyboard {
                     clearTimeout(this.state.clickTimeout);
                     this.state.clickTimeout = null;
                 }
-                // [수정] data-dblclick 값이 없으면 data-click 값을 사용
                 this.handleInput(el.dataset.dblclick || el.dataset.click);
             });
         });
@@ -104,11 +107,23 @@ class HanomaKeyboard {
         document.getElementById('space').addEventListener('click', () => this.handleInput(' '));
         document.getElementById('refresh-btn').addEventListener('click', () => this.clear());
         document.getElementById('copy-btn').addEventListener('click', () => this.copyToClipboard());
-        document.getElementById('caps-btn').addEventListener('click', () => this.toggleCapsLock());
+		
+        // 설정 창 내 버튼 이벤트
         document.getElementById('scale-up').addEventListener('click', () => this.setScale(this.state.scale + 0.01));
         document.getElementById('scale-down').addEventListener('click', () => this.setScale(this.state.scale - 0.01));
-        document.getElementById('hand-left').addEventListener('click', () => this.moveKeyboard(-1));
-        document.getElementById('hand-right').addEventListener('click', () => this.moveKeyboard(1));
+        document.getElementById('hand-left').addEventListener('click', () => this.moveKeyboard(-10));
+        document.getElementById('hand-right').addEventListener('click', () => this.moveKeyboard(10));
+        document.getElementById('position-up').addEventListener('click', () => this.moveKeyboardVertical(-10));
+        document.getElementById('position-down').addEventListener('click', () => this.moveKeyboardVertical(10));
+
+        // 설정 창 열기/닫기 이벤트
+        document.getElementById('settings-btn').addEventListener('click', () => this.openSettings());
+        document.querySelector('.close-button').addEventListener('click', () => this.closeSettings());
+        window.addEventListener('click', (event) => {
+            if (event.target == this.settingsModal) {
+                this.closeSettings();
+            }
+        });
 
         this.layerButtons.forEach(btn => {
             btn.addEventListener('click', () => this.switchLayer(btn.dataset.layer));
@@ -124,10 +139,10 @@ class HanomaKeyboard {
         if (this.state.activeLayer === 'KR' && isKR) {
             this.composeHangul(char);
         } else {
-            // 한글, 숫자, 심볼, 영어 입력
-            this.state.lastCharInfo = null; // 한글 조합 상태 초기화
+            this.state.lastCharInfo = null;
             let charToInsert = char;
 
+            // 이 부분은 그대로 유지하여 Caps Lock 상태일 때 대문자로 변환합니다.
             if (this.state.activeLayer === 'EN' && this.state.capsLock && /^[a-z]$/.test(char)) {
                 charToInsert = char.toUpperCase();
             }
@@ -142,38 +157,38 @@ class HanomaKeyboard {
         const isJungsung = this.JUNGSUNG.includes(char);
 
         if (isChosung) {
-            if (last && last.type === 'CVJ' && this.DOUBLE_FINAL[last.jong + char]) { // 겹받침 조합
+            if (last && last.type === 'CVJ' && this.DOUBLE_FINAL[last.jong + char]) {
                 this.removeLastChar();
                 const newJong = this.DOUBLE_FINAL[last.jong + char];
                 this.display.value += this.combineCode(last.cho, last.jung, newJong);
                 this.state.lastCharInfo = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: newJong };
-            } else if (last && last.type === 'CV') { // 종성 추가
+            } else if (last && last.type === 'CV') {
                 this.removeLastChar();
                 this.display.value += this.combineCode(last.cho, last.jung, char);
                 this.state.lastCharInfo = { type: 'CVJ', cho: last.cho, jung: last.jung, jong: char };
-            } else { // 초성 입력
+            } else {
                 this.display.value += char;
                 this.state.lastCharInfo = { type: 'C', cho: char };
             }
         } else if (isJungsung) {
-            if (last?.type === 'CVJ') { // 종성 분리 후 새 글자 조합
+            if (last?.type === 'CVJ') {
                 const double = this.REVERSE_DOUBLE_FINAL[last.jong];
-                if (double) { // 겹받침 분리
+                if (double) {
                     this.removeLastChar();
                     this.display.value += this.combineCode(last.cho, last.jung, double[0]);
                     this.display.value += this.combineCode(double[1], char);
                     this.state.lastCharInfo = { type: 'CV', cho: double[1], jung: char };
-                } else { // 홑받침 분리
+                } else {
                     this.removeLastChar();
                     this.display.value += this.combineCode(last.cho, last.jung);
                     this.display.value += this.combineCode(last.jong, char);
                     this.state.lastCharInfo = { type: 'CV', cho: last.jong, jung: char };
                 }
-            } else if (last?.type === 'C') { // 중성 추가
+            } else if (last?.type === 'C') {
                 this.removeLastChar();
                 this.display.value += this.combineCode(last.cho, char);
                 this.state.lastCharInfo = { type: 'CV', cho: last.cho, jung: char };
-            } else { // 모음 단독 입력
+            } else {
                 this.display.value += char;
                 this.state.lastCharInfo = null;
             }
@@ -184,7 +199,7 @@ class HanomaKeyboard {
         const ci = this.CHOSUNG.indexOf(cho);
         const ji = this.JUNGSUNG.indexOf(jung);
         const joi = this.JONGSUNG.indexOf(jong);
-        if (ci < 0 || ji < 0) return cho + jung; // 조합 실패 시 글자 반환
+        if (ci < 0 || ji < 0) return cho + jung;
         return String.fromCharCode(0xAC00 + (ci * 21 + ji) * 28 + joi);
     }
     
@@ -192,7 +207,7 @@ class HanomaKeyboard {
     removeLastChar() { this.display.value = this.display.value.slice(0, -1); }
     backspace() {
         this.removeLastChar();
-        this.state.lastCharInfo = null; // 상태 초기화
+        this.state.lastCharInfo = null;
     }
     clear() {
         this.display.value = '';
@@ -204,52 +219,91 @@ class HanomaKeyboard {
             .then(() => alert('클립보드에 복사되었습니다.'))
             .catch(err => console.error('복사 실패:', err));
     }
-
-    // @modified  Caps Lock 상태를 토글함.
-    // EN(영어) 레이어에서만 Caps Lock을 '켤' 수 있음.
-    // 다른 레이어로 전환하면 switchLayer 함수에 의해 자동으로 '꺼집니다'.
-    toggleCapsLock() {
-        // EN 레이어가 아니고, Caps Lock이 꺼져 있는 상태에서는 활성화(켜기) 불가
-        if (this.state.activeLayer !== 'EN' && !this.state.capsLock) {
-            return;
-        }
-        this.state.capsLock = !this.state.capsLock;
-        document.getElementById('caps-btn').classList.toggle('active', this.state.capsLock);
-    }
-
+	
     setScale(newScale) {
         this.state.scale = Math.max(0.5, Math.min(newScale, 2.0));
         localStorage.setItem('keyboardScale', this.state.scale);
-        this.applyScale();
+        this.applyKeyboardTransform();
     }
-    applyScale() {
-        this.keyboardContainer.style.transform = `scale(${this.state.scale})`;
+
+	applyHorizontalPosition() {
+        //this.keyboardContainer.style.left = `${this.state.horizontalOffset}px`;
+		this.keyboardContainer.style.left = `calc(50% + ${this.state.horizontalOffset}px)`;
     }
-	// 키보드 위치를 적용하는 함수
-    applyPosition() {
-        this.keyboardContainer.style.left = `${this.state.horizontalOffset}px`;
-    }
-	// 키보드를 수평으로 1px씩 이동시키는 함수
-    // @param {number} direction - 이동 방향. -1은 왼쪽, 1은 오른쪽.
+
     moveKeyboard(direction) {
         this.state.horizontalOffset += direction;
-		this.applyPosition(); // 화면에 위치 적용		
-        localStorage.setItem('keyboardHorizontalOffset', this.state.horizontalOffset); // [추가] 변경된 위치 값 저장
+		this.applyHorizontalPosition();		
+        localStorage.setItem('keyboardHorizontalOffset', this.state.horizontalOffset);
     }
-    switchLayer(layerName) {
-        this.state.activeLayer = layerName;
-        this.state.lastCharInfo = null; // 레이어 변경 시 조합 상태 초기화
 
+    applyKeyboardTransform() {
+        const scale = `scale(${this.state.scale})`;
+		const translateX = `translateX(-50%)`; // 수평 중앙 정렬을 위한 transform
+		const translateY = `translateY(${this.state.verticalOffset}px)`;
+		this.keyboardContainer.style.transform = `${translateY} ${translateX} ${scale}`;
+    }
+
+    moveKeyboardVertical(direction) {
+        this.state.verticalOffset += direction;
+        this.applyKeyboardTransform();
+        localStorage.setItem('keyboardVerticalOffset', this.state.verticalOffset);
+    }
+	
+	//EN 키보드의 자판을 대/소문자로 변경하는 함수
+    updateEnKeyCaps() {    
+        const isCaps = this.state.capsLock;
+        const enKeys = document.querySelectorAll('.layer[data-layer="EN"] text');
+
+        enKeys.forEach(key => {
+            const char = key.textContent;
+            // 한 글자로 된 알파벳만 변경합니다.
+            if (char && char.length === 1 && char.match(/[a-z]/i)) {
+                key.textContent = isCaps ? char.toUpperCase() : char.toLowerCase();
+            }
+        });
+    }
+	
+    switchLayer(layerName) {
+        if (layerName === 'EN') {            
+            if (this.state.activeLayer === 'EN') {    // 이미 'EN' 레이어가 활성 상태라면 Caps Lock 상태를 토글함
+                this.state.capsLock = !this.state.capsLock;
+            } else {            
+                this.state.capsLock = false;   // 다른 레이어에서 'EN'으로 전환하는 경우, Caps Lock은 항상 꺼진 상태로 시작
+            }
+        } else {       // 'EN'이 아닌 다른 레이어로 전환하면 무조건 Caps Lock을 끔            
+            this.state.capsLock = false;
+        }
+
+        // 새 레이어를 활성 상태로 설정하고 한글 조합 상태를 초기화합니다.
+        this.state.activeLayer = layerName;
+        this.state.lastCharInfo = null;
+
+        // 모든 레이어의 활성 상태를 업데이트합니다.
         document.querySelectorAll('.layer').forEach(div => {
             div.classList.toggle('active', div.dataset.layer === layerName);
         });
+
+        // 모든 버튼의 활성 상태를 업데이트합니다.
         this.layerButtons.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.layer === layerName);
         });
 
-        if (layerName !== 'EN' && this.state.capsLock) {
-            this.toggleCapsLock(); // EN 레이어가 아니면 Caps Lock 해제
+        // 'EN' 버튼에 Caps Lock 활성 상태를 시각적으로 표시합니다.
+        const enButton = document.querySelector('button[data-layer="EN"]');
+        if (enButton) {
+            enButton.classList.toggle('caps-on', this.state.capsLock);
         }
+		this.updateEnKeyCaps();  // Caps Lock 상태가 변경될 때마다 키보드 UI를 업데이트
+    }
+	
+	// 설정 창 관리
+    openSettings() {
+        this.settingsModal.style.display = 'block';
+    }
+
+    closeSettings() {
+        this.settingsModal.style.display = 'none';
     }
 }
 
@@ -257,7 +311,9 @@ class HanomaKeyboard {
 document.addEventListener('DOMContentLoaded', () => {
     new HanomaKeyboard({
         displayId: 'display',
+        displayContainerId: 'display-container',
         keyboardContainerId: 'keyboard-container',
-        layerButtonSelector: 'button[data-layer]'
+        layerButtonSelector: 'button[data-layer]',
+		settingsModalId: 'settings-modal' // 설정 창 ID 추가
     });
 });
