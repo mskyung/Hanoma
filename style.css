@@ -172,7 +172,7 @@ button {     /* 숫자,기호,영어,한글... 좌,우,Clear 버튼 */
 
 .settings-controls label {
     flex-basis: 30%;
-    text-align: left;
+    text-align: center;
 }
 
 .settings-controls button {
