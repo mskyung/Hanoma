@@ -117,6 +117,7 @@ class HanomaKeyboard {
         document.getElementById('space').addEventListener('click', () => this.handleInput(' '));
         document.getElementById('refresh-btn').addEventListener('click', () => this.clear());
         document.getElementById('copy-btn').addEventListener('click', () => this.copyToClipboard());
+		document.getElementById('enter').addEventListener('click', () => this.handleEnter());
 
         // 설정 창 내 버튼 이벤트
         document.getElementById('scale-up').addEventListener('click', () => this.setScale(this.state.scale + 0.01));
@@ -246,6 +247,11 @@ class HanomaKeyboard {
         this.resetComposition();
     }
     
+	handleEnter() {
+        this.insertAtCursor('\n');
+        this.resetComposition();
+    }
+	
     insertAtCursor(text) {
         const start = this.display.selectionStart;
         const end = this.display.selectionEnd;
