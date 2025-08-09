@@ -1,2 +1,0 @@
-# Hanoma
-Hangul input
